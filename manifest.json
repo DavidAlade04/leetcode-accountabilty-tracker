@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "LeetCode Accountability Tracker",
+  "version": "0.1.0",
+  "description": "Sends one daily Discord notification when LeetCode is opened.",
+  "permissions": ["storage", "tabs"],
+  "host_permissions": [
+    "https://leetcode.com/*",
+    "https://discord.com/api/webhooks/*"
+  ],
+  "action": {
+    "default_title": "LeetCode Accountability Tracker"
+  },
+  "options_page": "options.html",
+  "background": {
+    "service_worker": "background.js"
+  }
+}
