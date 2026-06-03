@@ -10,37 +10,36 @@ const STORAGE_KEYS = {
 const notificationDatesInFlight = new Set();
 
 chrome.runtime.onInstalled.addListener(() => {
-  chrome.runtime.openOptionsPage();
+  chrome.alarms.create("daily_reminder", { periodInMinutes: 60 });
 });
 
-chrome.action.onClicked.addListener(() => {
-  chrome.runtime.openOptionsPage();
+chrome.alarms.onAlarm.addListener(async (alarm) => {
+  if (alarm.name === "daily_reminder") {
+    const now = new Date();
+    if (now.getHours() >= 20) {
+      const today = getLocalDateKey(now);
+      const stored = await chrome.storage.local.get([STORAGE_KEYS.lastNotificationDate]);
+      
+      if (stored[STORAGE_KEYS.lastNotificationDate] !== today) {
+        chrome.notifications.create("reminder_notification", {
+          type: "basic",
+          iconUrl: "icons/icon128.png",
+          title: "LeetCode Accountability Tracker",
+          message: "It's past 8 PM! Don't break your streak—go solve a problem!",
+          priority: 2
+        });
+      }
+    }
+  }
 });
 
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  const url = changeInfo.url || tab.url;
-
-  if (changeInfo.status !== "complete" || !isLeetCodeUrl(url)) {
-    return;
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === "problem_solved") {
+    notifyOncePerDay(message.url).catch((error) => {
+      console.error("LeetCode accountability notification failed:", error);
+    });
   }
-
-  notifyOncePerDay(url).catch((error) => {
-    console.error("LeetCode accountability notification failed:", error);
-  });
 });
-
-function isLeetCodeUrl(url) {
-  if (!url) {
-    return false;
-  }
-
-  try {
-    const urlObj = new URL(url);
-    return urlObj.hostname === "leetcode.com" && urlObj.pathname.startsWith("/problems/");
-  } catch {
-    return false;
-  }
-}
 
 async function notifyOncePerDay(url) {
   const settings = await getSettings();
@@ -183,12 +182,13 @@ function getOrdinalSuffix(day) {
   }
 }
 
-function getRandomCompliment() {
-  const compliments = Array.isArray(self.DAILY_COMPLIMENTS)
-    ? self.DAILY_COMPLIMENTS.filter(Boolean)
-    : [];
+function getRandomCompliment(difficulty) {
+  let compliments = [];
+  if (self.COMPLIMENTS) {
+    compliments = self.COMPLIMENTS[difficulty] || self.COMPLIMENTS.Medium || [];
+  }
 
-  if (compliments.length === 0) {
+  if (!compliments || compliments.length === 0) {
     return "Nice work showing up today.";
   }
 
@@ -280,6 +280,7 @@ async function sendDiscordNotification({ date, problem, streak, settings }) {
   const friendlyDate = formatFriendlyDate(date);
   const streakLabel = streak === 1 ? "1 day" : `${streak} days`;
   const problemText = formatProblemText(problem);
+  const compliment = getRandomCompliment(problem ? problem.difficulty : "Medium");
 
   const response = await fetch(settings.discordWebhookUrl, {
     method: "POST",
@@ -287,7 +288,7 @@ async function sendDiscordNotification({ date, problem, streak, settings }) {
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
-      content: `${settings.leetcodeUsername} opened LeetCode on ${friendlyDate}. Current streak: ${streakLabel}.${problemText} ${getRandomCompliment()}`
+      content: `${settings.leetcodeUsername} solved a LeetCode problem on ${friendlyDate}. Current streak: ${streakLabel}.${problemText} ${compliment}`
     })
   });
 
