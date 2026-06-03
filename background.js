@@ -35,7 +35,8 @@ function isLeetCodeUrl(url) {
   }
 
   try {
-    return new URL(url).hostname === "leetcode.com";
+    const urlObj = new URL(url);
+    return urlObj.hostname === "leetcode.com" && urlObj.pathname.startsWith("/problems/");
   } catch {
     return false;
   }

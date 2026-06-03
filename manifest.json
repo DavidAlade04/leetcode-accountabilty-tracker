@@ -2,14 +2,24 @@
   "manifest_version": 3,
   "name": "LeetCode Accountability Tracker",
   "version": "0.1.0",
-  "description": "Sends one daily Discord notification when LeetCode is opened.",
+  "description": "Sends one daily Discord notification when a LeetCode problem is opened.",
   "permissions": ["storage", "tabs"],
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
   "host_permissions": [
     "https://leetcode.com/*",
     "https://discord.com/api/webhooks/*"
   ],
   "action": {
-    "default_title": "LeetCode Accountability Tracker"
+    "default_title": "LeetCode Accountability Tracker",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
   },
   "options_page": "options.html",
   "background": {
